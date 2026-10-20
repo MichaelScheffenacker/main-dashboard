@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 
-export function openDatabase(path = process.env.DATABASE_PATH || 'data/dashboard.sqlite') {
+export function openDatabase(path: string = process.env.DATABASE_PATH || 'data/dashboard.sqlite'): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), { recursive: true });
   const database = new DatabaseSync(path);
   database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');

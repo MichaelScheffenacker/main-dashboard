@@ -1,6 +1,6 @@
 # main-dashboard
 
-A private dashboard with a Node.js backend and SQLite database.
+A private dashboard with a TypeScript backend using Node.js and SQLite.
 
 ## Setup
 
@@ -10,6 +10,7 @@ Use Node.js 26 (see `.nvmrc`). With nvm installed:
 nvm install
 nvm use
 npm ci
+npm run typecheck
 npm run db:init
 npm test
 npm start
@@ -20,6 +21,9 @@ SQLite is bundled with Node.js; no separate database server is required.
 Data is stored in `data/dashboard.sqlite` and excluded from Git.
 Configure `DATABASE_PATH`, `HOST`, or `PORT` through environment variables.
 Use `npm run dev` for automatic restarts during development.
+Node.js 26 runs the TypeScript files directly using built-in type stripping;
+no build step is required. Run `npm run typecheck` for strict type checking
+of the backend and tests, and `npm test` for the TypeScript test suite.
 
 ## Local access and the Codex sandbox
 

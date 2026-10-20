@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { openDatabase } from './database.js';
+import { openDatabase } from './database.ts';
 
 const database = openDatabase();
 const host = process.env.HOST || '127.0.0.1';
@@ -20,7 +20,7 @@ const server = createServer((request, response) => {
   response.end();
 });
 server.listen(port, host, () => console.log(`Backend: http://${host}:${port}`));
-function shutdown() {
+function shutdown(): void {
   server.close(() => {
     database.close();
   });

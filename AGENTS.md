@@ -3,8 +3,8 @@
 ## Project Structure & Module Organization
 
 Work in `/home/msc/workspace/main-dashboard` (`~/workspace/main-dashboard`).
-This private dashboard has a JavaScript backend using Node.js and SQLite.
-`src/server.js` runs the HTTP server; `src/database.js` opens the database.
+This private dashboard has a TypeScript backend using Node.js and SQLite.
+`src/server.ts` runs the HTTP server; `src/database.ts` opens the database.
 Tests live in `test/`. Runtime data lives in the ignored `data/` directory.
 No frontend or asset structure has been established yet.
 
@@ -29,18 +29,40 @@ There is no application schema or migration system yet.
 - `npm run db:init`: create/open the SQLite file and print its version.
 - `npm start`: start the backend at `http://127.0.0.1:3000`.
 - `npm run dev`: restart the backend when source files change.
+- `npm run typecheck`: check backend and test types with TypeScript in strict mode.
 - `npm test`: run tests using the built-in Node.js test runner.
 - `curl http://127.0.0.1:3000/health`: check HTTP and database health.
 
 Set `HOST` and `PORT` to change the listening address. No build step,
-formatter, or linter is configured.
+formatter, or linter is configured. Node.js runs TypeScript directly using
+built-in type stripping; use only erasable TypeScript syntax and `.ts`
+extensions for local imports.
 
 ## Coding Style & Testing Guidelines
 
 Use ES modules, two-space indentation, semicolons, and camelCase variables.
-Use bound SQL parameters for values. Name tests `test/*.test.js`.
+Use bound SQL parameters for values. Name tests `test/*.test.ts`.
 Verify persistence and database constraints for storage changes. Run
-`npm test` after changes and report limitations; no coverage target exists.
+`npm run typecheck` and `npm test` after changes and report limitations;
+no coverage target exists.
+
+### Restictive Interfaces
+
+Interfaces between system components (esepecially accessible from third
+parties) are to be designed as restrictive as possible. 
+
+#### API Endpoints
+
+- Overly long request paths have to be captured and rejectd as soon as
+the framework allows.
+- The type of each request has to be clearly defined.
+- The payload and its data type of each endpoint have to be defined
+clearly and restrictively.
+- There is a datastructure (JS object) defining each endpoint,
+it contains:
+  - Type of the endpoint
+  - Data
+
 
 ## Commit & Pull Request Guidelines
 

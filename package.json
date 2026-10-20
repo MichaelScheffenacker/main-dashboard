@@ -3,11 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=26 <27" },
+  "engines": {
+    "node": ">=26 <27"
+  },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "db:init": "node src/database.js",
-    "test": "node --test"
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "db:init": "node src/database.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
   }
 }
