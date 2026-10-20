@@ -1,5 +1,6 @@
 # Repository Guidelines
 
+
 ## Project Structure & Module Organization
 
 Work in `/home/msc/workspace/main-dashboard` (`~/workspace/main-dashboard`).
@@ -7,6 +8,7 @@ This private dashboard has a TypeScript backend using Node.js and SQLite.
 `src/server.ts` runs the HTTP server; `src/database.ts` opens the database.
 Tests live in `test/`. Runtime data lives in the ignored `data/` directory.
 No frontend or asset structure has been established yet.
+
 
 ## Runtime & Database Setup
 
@@ -23,6 +25,7 @@ on the installed runtime is 3.54.0. The default database file is
 Foreign keys and write-ahead logging are enabled when opening databases.
 There is no application schema or migration system yet.
 
+
 ## Build, Test, and Development Commands
 
 - `npm ci`: restore the locked package setup using Node.js 26.
@@ -38,6 +41,7 @@ formatter, or linter is configured. Node.js runs TypeScript directly using
 built-in type stripping; use only erasable TypeScript syntax and `.ts`
 extensions for local imports.
 
+
 ## Coding Style & Testing Guidelines
 
 Use ES modules, two-space indentation, semicolons, and camelCase variables.
@@ -46,22 +50,31 @@ Verify persistence and database constraints for storage changes. Run
 `npm run typecheck` and `npm test` after changes and report limitations;
 no coverage target exists.
 
-### Restictive Interfaces
 
-Interfaces between system components (esepecially accessible from third
+### Restrictive Interfaces
+
+Interfaces between system components (especially accessible from third
 parties) are to be designed as restrictive as possible. 
 
 #### API Endpoints
 
-- Overly long request paths have to be captured and rejectd as soon as
+- Overly long request paths have to be captured and rejected as soon as
 the framework allows.
 - The type of each request has to be clearly defined.
 - The payload and its data type of each endpoint have to be defined
 clearly and restrictively.
-- There is a datastructure (JS object) defining each endpoint,
+- There is a data structure (JS object) defining each endpoint,
 it contains:
   - Type of the endpoint
-  - Data
+  - Data type of the payload (undefined is no payload allowed)
+  
+#### Database Queries
+
+- Each query has to use a prepared statement.
+- Strings used in prepared statements must be generated without
+any string operation from any input from outside the application.
+Especially string concatenation and template strings with foreign
+strings have to be avoided.
 
 
 ## Commit & Pull Request Guidelines
@@ -69,6 +82,7 @@ it contains:
 History currently contains `Initial commit`; no broader convention exists.
 Use concise, imperative commit subjects. Describe changes, reasons, and
 validation in pull requests; link issues when relevant.
+
 
 ## Security & Configuration
 
