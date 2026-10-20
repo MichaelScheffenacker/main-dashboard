@@ -1,0 +1,13 @@
+{
+  "name": "main-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=26 <27" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "node src/database.js",
+    "test": "node --test"
+  }
+}
