@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111413">
+  <title>Main Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <a class="brand" href="#home">Main Dashboard<span>Personal workspace</span></a>
+    <nav aria-label="Areas">
+      <a href="#home">Overview</a>
+      <a href="#todo">Todo</a>
+    </nav>
+    <span id="save-status" role="status">Loading boards…</span>
+  </header>
+  <main id="main" tabindex="-1">
+    <section id="error" role="alert" hidden>
+      <p id="error-message"></p>
+      <button id="reload" type="button">Reload boards</button>
+    </section>
+    <section id="home" aria-labelledby="home-heading">
+      <p class="eyebrow">YOUR WORKSPACE</p>
+      <h1 id="home-heading">Overview</h1>
+      <p class="intro">Your areas and the next task on each board.</p>
+      <div class="areas">
+        <section class="area" aria-labelledby="summary-heading">
+          <div class="section-heading">
+            <h2 id="summary-heading">Todo <span id="board-count" class="count">0</span></h2>
+            <a href="#todo">Open boards →</a>
+          </div>
+          <div id="summaries"><p class="empty">Loading boards…</p></div>
+        </section>
+      </div>
+    </section>
+    <section id="todo" aria-labelledby="todo-heading" hidden>
+      <p class="eyebrow">AREA / TODO</p>
+      <div class="section-heading">
+        <h1 id="todo-heading">Todo boards</h1>
+        <a href="#home">← Overview</a>
+      </div>
+      <p class="intro">Drag entries between columns. Reorder boards using their handles or arrow buttons.</p>
+      <fieldset id="todo-controls" disabled>
+        <legend class="sr-only">Manage Todo boards</legend>
+        <form id="new-board">
+          <label for="board-title">New board</label>
+          <input id="board-title" name="title" maxlength="100" placeholder="Give your board a name" data-focus-key="new-board" required>
+          <button>Create board</button>
+        </form>
+        <div id="boards"><p class="empty">Loading boards…</p></div>
+      </fieldset>
+    </section>
+    <noscript>This dashboard requires JavaScript to load and manage boards.</noscript>
+  </main>
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="editor-form">
+      <h2 id="editor-title">Edit</h2>
+      <label id="editor-label" for="editor-value">Name</label>
+      <input id="editor-value" required>
+      <div class="dialog-actions">
+        <button type="button" id="editor-cancel" class="secondary">Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

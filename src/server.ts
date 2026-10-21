@@ -1,29 +1,13 @@
-import { createServer } from 'node:http';
+import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 
 const database = openDatabase();
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
-const server = createServer((request, response) => {
-  if (request.method === 'GET' && request.url === '/health') {
-    try {
-      database.prepare('SELECT 1').get();
-      response.writeHead(200, { 'Content-Type': 'application/json' });
-      response.end(JSON.stringify({ status: 'ok', database: 'sqlite' }));
-    } catch {
-      response.writeHead(503, { 'Content-Type': 'application/json' });
-      response.end(JSON.stringify({ status: 'unavailable' }));
-    }
-    return;
-  }
-  response.writeHead(404);
-  response.end();
-});
+const server = createApp(database);
 server.listen(port, host, () => console.log(`Backend: http://${host}:${port}`));
 function shutdown(): void {
-  server.close(() => {
-    database.close();
-  });
+  server.close(() => { database.close(); });
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

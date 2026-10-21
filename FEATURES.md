@@ -16,6 +16,8 @@ A private dashboard.
 
 - Kanbanboards
 - 3 columns: todo, doing, done
+- Tasks can only be added in todo. Doing and done have no 'add a task' fields;
+  move existing tasks into those columns.
 - single line entries
 - each line can be reordered by draging
 - each board can be reordered by draging

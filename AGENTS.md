@@ -7,7 +7,9 @@ Work in `/home/msc/workspace/main-dashboard` (`~/workspace/main-dashboard`).
 This private dashboard has a TypeScript backend using Node.js and SQLite.
 `src/server.ts` runs the HTTP server; `src/database.ts` opens the database.
 Tests live in `test/`. Runtime data lives in the ignored `data/` directory.
-No frontend or asset structure has been established yet.
+The vanilla HTML/CSS/JavaScript frontend lives in `public/`. `src/app.ts`
+defines the HTTP API and static asset allowlist; `src/todo.ts` manages Todo
+validation, schema initialization, and transactional persistence.
 
 
 ## Runtime & Database Setup
@@ -23,7 +25,9 @@ service or npm driver is required. The verified bundled SQLite version
 on the installed runtime is 3.54.0. The default database file is
 `data/dashboard.sqlite`. Set `DATABASE_PATH` to override its location.
 Foreign keys and write-ahead logging are enabled when opening databases.
-There is no application schema or migration system yet.
+Todo tables are created on server startup with `CREATE TABLE IF NOT EXISTS`.
+There is no versioned migration system yet. Todo writes use a revision check
+to reject stale state and preserve board/task ordering in SQLite.
 
 
 ## Build, Test, and Development Commands
