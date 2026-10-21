@@ -10,7 +10,7 @@ On Debian 13, install Podman and its rootless dependencies with:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y podman uidmap slirp4netns fuse-overlayfs
+sudo apt-get install podman uidmap slirp4netns fuse-overlayfs
 ```
 
 Run from the repository root:
@@ -18,10 +18,7 @@ Run from the repository root:
 ```sh
 podman build --format docker -t localhost/main-dashboard -f Containerfile .
 podman volume create main-dashboard-data
-podman run -d --name main-dashboard \
-  -p 127.0.0.1:3000:3000 \
-  -v main-dashboard-data:/app/data \
-  localhost/main-dashboard
+podman run -d --name main-dashboard -p 127.0.0.1:3000:3000 -v main-dashboard-data:/app/data localhost/main-dashboard
 ```
 
 Open `http://127.0.0.1:3000/`. Check health and view logs with:
@@ -49,8 +46,7 @@ For a database imported into a named volume, ensure the application user
 owns the directory and files before starting the dashboard:
 
 ```sh
-podman run --rm --user 0 -v main-dashboard-data:/app/data \
-  localhost/main-dashboard chown -R node:node /app/data
+podman run --rm --user 0 -v main-dashboard-data:/app/data localhost/main-dashboard chown -R node:node /app/data
 ```
 
 The running installation on this development machine uses
@@ -71,10 +67,7 @@ After code changes, rebuild and replace the container, reusing its volume:
 podman build --format docker -t localhost/main-dashboard -f Containerfile .
 podman stop main-dashboard
 podman rm main-dashboard
-podman run -d --name main-dashboard \
-  -p 127.0.0.1:3000:3000 \
-  -v main-dashboard-data:/app/data \
-  localhost/main-dashboard
+podman run -d --name main-dashboard -p 127.0.0.1:3000:3000 -v main-dashboard-data:/app/data localhost/main-dashboard
 ```
 
 To use the existing host `data/` directory instead of a named volume on
@@ -84,11 +77,7 @@ same name first):
 
 ```sh
 mkdir -p data
-podman run -d --name main-dashboard \
-  --userns=keep-id --user "$(id -u):$(id -g)" \
-  -p 127.0.0.1:3000:3000 \
-  -v "$(pwd)/data:/app/data:Z" \
-  localhost/main-dashboard
+podman run -d --name main-dashboard --userns=keep-id --user "$(id -u):$(id -g)" -p 127.0.0.1:3000:3000 -v "$(pwd)/data:/app/data:Z" localhost/main-dashboard
 ```
 
 This mount keeps the existing database and its journal files together.
