@@ -39,14 +39,6 @@ async function frontend(t: TestContext, initial?: TodoState) {
     });
     return { ok: response.status >= 200 && response.status < 300, status: response.status, json: async () => JSON.parse(response.body) };
   } });
-  // jsdom does not implement native dialog behavior; model open/close events.
-  const dialog = document.querySelector('dialog')!;
-  dialog.showModal = () => dialog.setAttribute('open', '');
-  dialog.close = value => {
-    dialog.returnValue = value || '';
-    dialog.removeAttribute('open');
-    dialog.dispatchEvent(new window.Event('close'));
-  };
   window.confirm = () => true;
   await window.eval(`(async () => {${script}\n})()`);
   const query = <T extends Element = HTMLElement>(selector: string) => {
@@ -109,22 +101,21 @@ test('frontend adds and edits tasks, changes status, chooses summary priority, a
   taskInput().value = 'Second';
   ui.submit('.column[data-status="todo"] form');
   await ui.saved();
-  const select = ui.query<HTMLSelectElement>('select[aria-label="Status for Second"]');
-  select.value = 'doing';
-  select.dispatchEvent(new ui.window.Event('change', { bubbles: true }));
+  assert.equal(ui.document.querySelectorAll('select').length, 0);
+  ui.drag(ui.query('.task:last-child'), ui.query('[data-status="doing"]'));
   await ui.saved();
   assert.match(ui.query('.summary p').textContent!, /doingSecond/);
-  ui.click('Edit Second');
-  ui.query<HTMLInputElement>('#editor-value').value = 'Edited';
-  ui.submit('#editor-form');
+  ui.query<HTMLElement>('[data-status="doing"] .task-text').click();
+  ui.query<HTMLInputElement>('.inline-editor input').value = 'Edited';
+  ui.submit('.inline-editor');
   await waitFor(() => ui.query('.summary p').textContent!.includes('Edited'));
   assert.equal((await ui.read()).boards[0].tasks[1].text, 'Edited');
   ui.click('Delete Edited');
   await ui.saved();
   assert.match(ui.query('.summary p').textContent!, /todoFirst/);
   ui.click('Rename test');
-  ui.query<HTMLInputElement>('#editor-value').value = 'Renamed';
-  ui.submit('#editor-form');
+  ui.query<HTMLInputElement>('.inline-editor input').value = 'Renamed';
+  ui.submit('.inline-editor');
   await waitFor(() => ui.query('.board h2').textContent === 'Renamed');
   ui.click('Delete Renamed');
   await ui.saved();
@@ -146,7 +137,9 @@ test('frontend persists keyboard and drag ordering of boards and tasks, includin
   ui.drag(ui.query('#board-a .handle'), ui.query('#board-b'));
   await ui.saved();
   assert.deepEqual((await ui.read()).boards.map(board => board.id), ['a', 'b']);
-  ui.click('Move Two up');
+  assert.equal(ui.document.querySelectorAll('.task button').length, 2);
+  assert.equal(ui.query('.task .handle').textContent, '⠿');
+  ui.drag(ui.query('[data-task-id="two"] .handle'), ui.query('[data-task-id="one"]'));
   await ui.saved();
   assert.deepEqual((await ui.read()).boards[0].tasks.map(task => task.id), ['two', 'one']);
   ui.drag(ui.query('[data-task-id="one"]'), ui.query('[data-task-id="two"]'));
@@ -189,5 +182,30 @@ test('frontend blocks stale writes and recovers by reloading boards', async t =>
   assert.equal(ui.query<HTMLFieldSetElement>('#todo-controls').disabled, false);
   assert.equal(ui.document.querySelectorAll('.board').length, 2);
   assert.equal(ui.query<HTMLElement>('#error').hidden, true);
+  assert.deepEqual(ui.errors, []);
+});
+
+
+test('inline edits save on submit, cancel with Escape, and retain failed drafts', async t => {
+  const ui = await frontend(t, initial());
+  ui.query<HTMLElement>('#board-a h2').click();
+  const title = ui.query<HTMLInputElement>('#board-a h2 input');
+  title.value = 'Renamed inline';
+  ui.submit('#board-a .inline-editor');
+  await ui.saved();
+  assert.equal((await ui.read()).boards[0].title, 'Renamed inline');
+  assert.equal(ui.document.querySelectorAll('#board-a h2 input').length, 0);
+  ui.query<HTMLElement>('[data-task-id="one"] .task-text').click();
+  const input = ui.query<HTMLInputElement>('[data-task-id="one"] input');
+  input.value = 'Cancelled';
+  input.dispatchEvent(new ui.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(ui.query('[data-task-id="one"] .task-text').textContent, 'One');
+  ui.query<HTMLElement>('[data-task-id="one"] .task-text').click();
+  ui.query<HTMLInputElement>('[data-task-id="one"] input').value = 'Keep failed edit';
+  ui.failNext();
+  ui.submit('[data-task-id="one"] form');
+  await waitFor(() => ui.query('#save-status').textContent === 'Not saved');
+  assert.equal(ui.query<HTMLInputElement>('[data-task-id="one"] input').value, 'Keep failed edit');
+  assert.equal((await ui.read()).boards[0].tasks[0].text, 'One');
   assert.deepEqual(ui.errors, []);
 });

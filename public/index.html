@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111413">
   <title>Main Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
@@ -21,7 +22,7 @@
   <main id="main" tabindex="-1">
     <section id="error" role="alert" hidden>
       <p id="error-message"></p>
-      <button id="reload" type="button">Reload boards</button>
+      <button id="reload" type="button">[Reload]</button>
     </section>
     <section id="home" aria-labelledby="home-heading">
       <p class="eyebrow">YOUR WORKSPACE</p>
@@ -49,23 +50,12 @@
         <form id="new-board">
           <label for="board-title">New board</label>
           <input id="board-title" name="title" maxlength="100" placeholder="Give your board a name" data-focus-key="new-board" required>
-          <button>Create board</button>
+          <button>[Create]</button>
         </form>
         <div id="boards"><p class="empty">Loading boards…</p></div>
       </fieldset>
     </section>
     <noscript>This dashboard requires JavaScript to load and manage boards.</noscript>
   </main>
-  <dialog id="editor" aria-labelledby="editor-title">
-    <form id="editor-form">
-      <h2 id="editor-title">Edit</h2>
-      <label id="editor-label" for="editor-value">Name</label>
-      <input id="editor-value" required>
-      <div class="dialog-actions">
-        <button type="button" id="editor-cancel" class="secondary">Cancel</button>
-        <button type="submit">Save</button>
-      </div>
-    </form>
-  </dialog>
 </body>
 </html>

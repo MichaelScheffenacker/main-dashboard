@@ -58,7 +58,8 @@ using their controls. Board deletion asks for confirmation.
 
 Drag a board by its handle to reorder it. Drag tasks onto another task to
 insert before it, or onto a column to append them (including across boards).
-Up/down buttons and task status selectors provide keyboard alternatives.
+Board up/down buttons provide keyboard alternatives for reordering boards. Move tasks
+between columns by dragging.
 Changes save automatically to SQLite. On the overview, each board shows
 its first Doing task, falling back to its first Todo task.
 
@@ -66,8 +67,8 @@ The frontend is buildless vanilla HTML, CSS, and JavaScript in `public/`.
 Board and task IDs work over both localhost and HTTP LAN connections.
 Editing is disabled until boards load and while a save is in progress.
 Errors appear above the dashboard with a Reload boards button; failed saves
-preserve input drafts. Board/task edits use dialogs with the API's length
-limits. To serve the dashboard on your LAN, run `HOST=0.0.0.0 npm start`
+preserve input drafts. Click a board title or task to edit it inline, then press Enter to save
+or Escape to cancel. Inputs use the API's length limits. To serve the dashboard on your LAN, run `HOST=0.0.0.0 npm start`
 and visit `http://<server-ip>:3000/`.
 
 The server creates the Todo tables on first startup. `GET /api/todo` reads

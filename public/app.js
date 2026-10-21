@@ -3,6 +3,7 @@ let state = { revision: 0, boards: [] };
 let loaded = false;
 let busy = false;
 let drag = null;
+const inlineEditors = new WeakMap();
 const $ = selector => document.querySelector(selector);
 const element = (tag, text, className) => {
   const node = document.createElement(tag);
@@ -18,7 +19,7 @@ function createId() {
 }
 
 function button(text, label, action, focusKey) {
-  const node = element('button', text, 'secondary');
+  const node = element('button', `[${text}]`, 'secondary');
   node.type = 'button';
   node.setAttribute('aria-label', label);
   node.title = label;
@@ -85,6 +86,7 @@ async function change(update) {
       throw new Error(result.error || 'Unable to save.');
     }
     state = result;
+    document.querySelectorAll('.inline-editor input[data-submitted]').forEach(input => { delete input.dataset.draftKey; });
     render();
     $('#save-status').textContent = 'All changes saved';
     return true;
@@ -115,34 +117,45 @@ function route() {
   }
 }
 
-async function editText(title, label, value, maxLength) {
-  const dialog = $('#editor');
-  $('#editor-title').textContent = title;
-  $('#editor-label').textContent = label;
-  const input = $('#editor-value');
+function editInline(node, value, maxLength, label, update, key) {
+  if (!loaded || node.querySelector('input')) return;
+  const form = element('form', undefined, 'inline-editor');
+  const input = element('input');
   input.value = value;
   input.maxLength = maxLength;
-  input.setCustomValidity('');
-  dialog.showModal();
+  input.required = true;
+  input.dataset.draftKey = key;
+  input.setAttribute('aria-label', label);
+  form.append(input);
+  node.replaceChildren(form);
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const text = input.value.trim();
+    if (!text) { input.setCustomValidity('Enter a name or task.'); input.reportValidity(); return; }
+    if (text === value) { node.textContent = value; return; }
+    input.dataset.submitted = '';
+    await change(next => update(next, text));
+  });
+  input.addEventListener('input', () => input.setCustomValidity(''));
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); node.textContent = value; node.focus(); }
+  });
   input.focus();
   input.select();
-  return new Promise(resolve => {
-    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'save' ? input.value.trim() : null), { once: true });
-  });
 }
-$('#editor-form').addEventListener('submit', event => {
-  event.preventDefault();
-  const input = $('#editor-value');
-  if (!input.value.trim()) {
-    input.setCustomValidity('Enter a name or task.');
-    input.reportValidity();
-    return;
-  }
-  $('#editor').close('save');
-});
-$('#editor-value').addEventListener('input', () => $('#editor-value').setCustomValidity(''));
-$('#editor-cancel').addEventListener('click', () => $('#editor').close('cancel'));
-$('#editor').addEventListener('cancel', () => { $('#editor').returnValue = 'cancel'; });
+
+function editable(node, value, maxLength, label, update, key) {
+  node.tabIndex = 0;
+  node.title = `${label} (Enter to edit)`;
+  const edit = () => editInline(node, value, maxLength, label, update, key);
+  node.dataset.editorKey = key;
+  inlineEditors.set(node, edit);
+  node.addEventListener('click', event => { if (!event.target.closest('input')) edit(); });
+  node.addEventListener('keydown', event => {
+    if (event.target === node && event.key === 'Enter') { event.preventDefault(); edit(); }
+  });
+  return edit;
+}
 
 function reorderBoard(id, targetId) {
   if (id === targetId) return;
@@ -209,44 +222,23 @@ function dropTarget(node, kind, action) {
   });
 }
 
-function renderTask(task, tasks, taskIndex, board, status) {
-  const row = element('div', undefined, 'task');
+function renderTask(task, board, status) {
+  const row = element('article', undefined, 'task');
   row.dataset.taskId = task.id;
   dragSource(row, { kind: 'task', id: task.id });
   const text = element('span', task.text, 'task-text');
   text.title = task.text;
-  row.append(text);
+  const handle = element('span', '⠿', 'handle');
+  handle.title = 'Drag to reorder or move task';
+  handle.setAttribute('aria-hidden', 'true');
+  dragSource(handle, { kind: 'task', id: task.id });
+  row.append(handle, text);
   dropTarget(row, 'task', id => moveTask(id, board.id, status, task.id));
-  const controls = element('div', undefined, 'task-controls');
-  const select = element('select');
-  select.dataset.focusKey = `status-${task.id}`;
-  select.setAttribute('aria-label', `Status for ${task.text}`);
-  for (const option of statuses) {
-    const node = element('option', option);
-    node.value = option;
-    select.append(node);
-  }
-  select.value = status;
-  select.addEventListener('change', () => moveTask(task.id, board.id, select.value));
-  controls.append(select);
-  for (const [symbol, offset] of [['↑', -1], ['↓', 1]]) {
-    const move = button(symbol, `Move ${task.text} ${offset < 0 ? 'up' : 'down'}`, () => {
-      change(next => {
-        const items = next.boards.find(item => item.id === board.id).tasks;
-        const from = items.findIndex(item => item.id === task.id);
-        const to = items.findIndex(item => item.id === tasks[taskIndex + offset].id);
-        [items[from], items[to]] = [items[to], items[from]];
-      });
-    }, `move-${task.id}-${offset}`);
-    move.disabled = !tasks[taskIndex + offset];
-    controls.append(move);
-  }
-  controls.append(button('Edit', `Edit ${task.text}`, async () => {
-    const text = await editText('Edit task', 'Task', task.text, 300);
-    if (text && text !== task.text) change(next => {
-      next.boards.find(item => item.id === board.id).tasks.find(item => item.id === task.id).text = text;
-    });
-  }, `edit-${task.id}`), button('×', `Delete ${task.text}`, () => change(next => {
+  editable(text, task.text, 300, `Edit ${task.text}`, (next, value) => {
+    next.boards.find(item => item.id === board.id).tasks.find(item => item.id === task.id).text = value;
+  }, `edit-task-${task.id}`);
+  const controls = element('span', undefined, 'task-controls');
+  controls.append(button('x', `Delete ${task.text}`, () => change(next => {
     const target = next.boards.find(item => item.id === board.id);
     target.tasks = target.tasks.filter(item => item.id !== task.id);
   })));
@@ -260,7 +252,7 @@ function renderColumn(board, status, drafts) {
   const tasks = board.tasks.filter(task => task.status === status);
   column.append(element('h3', `${status} · ${tasks.length}`));
   const list = element('div', undefined, 'tasks');
-  tasks.forEach((task, index) => list.append(renderTask(task, tasks, index, board, status)));
+  tasks.forEach(task => list.append(renderTask(task, board, status)));
   if (!tasks.length) list.append(element('p', 'No tasks', 'column-empty'));
   column.append(list);
   if (status === 'todo') {
@@ -274,7 +266,7 @@ function renderColumn(board, status, drafts) {
     input.maxLength = 300;
     input.placeholder = '+ Add a task';
     input.setAttribute('aria-label', `New ${status} task in ${board.title}`);
-    const add = element('button', '+');
+    const add = element('button', '[+]');
     add.setAttribute('aria-label', `Add ${status} task`);
     form.append(input, add);
     form.addEventListener('submit', async event => {
@@ -325,24 +317,23 @@ function render() {
     summaries.append(summary);
     const card = element('article', undefined, 'board');
     card.id = `board-${board.id}`;
-    const heading = element('div', undefined, 'board-heading');
+    const heading = element('header', undefined, 'board-heading');
     const handle = element('span', '⠿', 'handle');
     handle.title = 'Drag to reorder board';
     handle.setAttribute('aria-hidden', 'true');
     dragSource(handle, { kind: 'board', id: board.id });
-    heading.append(handle, element('h2', board.title));
-    const actions = element('div', undefined, 'board-actions');
+    const title = element('h2', board.title);
+    const edit = editable(title, board.title, 100, `Rename ${board.title}`, (next, value) => {
+      next.boards.find(item => item.id === board.id).title = value;
+    }, `edit-board-${board.id}`);
+    heading.append(handle, title);
+    const actions = element('span', undefined, 'board-actions');
     for (const [symbol, offset] of [['↑', -1], ['↓', 1]]) {
       const move = button(symbol, `Move ${board.title} ${offset < 0 ? 'up' : 'down'}`, () => reorderBoard(board.id, state.boards[boardIndex + offset].id), `move-${board.id}-${offset}`);
       move.disabled = !state.boards[boardIndex + offset];
       actions.append(move);
     }
-    actions.append(button('Rename', `Rename ${board.title}`, async () => {
-      const title = await editText('Rename board', 'Board name', board.title, 100);
-      if (title && title !== board.title) change(next => {
-        next.boards.find(item => item.id === board.id).title = title;
-      });
-    }, `rename-${board.id}`), button('Delete', `Delete ${board.title}`, () => {
+    actions.append(button('e', `Rename ${board.title}`, edit, `rename-${board.id}`), button('x', `Delete ${board.title}`, () => {
       if (confirm(`Delete “${board.title}” and all its tasks?`)) change(next => {
         next.boards = next.boards.filter(item => item.id !== board.id);
       });
@@ -355,6 +346,14 @@ function render() {
     card.append(columns);
     boards.append(card);
   }
+  document.querySelectorAll('.task-text, .board-heading h2').forEach(node => {
+    const draft = drafts.get(node.dataset.editorKey);
+    if (draft !== undefined) {
+      inlineEditors.get(node)();
+      const input = node.querySelector('input');
+      if (input) input.value = draft;
+    }
+  });
 }
 
 $('#new-board').addEventListener('submit', async event => {
