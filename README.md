@@ -2,7 +2,100 @@
 
 A private dashboard with a TypeScript backend using Node.js and SQLite.
 
-## Setup
+## Run with Podman
+
+Install [Podman](https://podman.io/docs/installation) first. On macOS or
+Windows, initialize and start a Podman machine before running these commands.
+On Debian 13, install Podman and its rootless dependencies with:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y podman uidmap slirp4netns fuse-overlayfs
+```
+
+Run from the repository root:
+
+```sh
+podman build --format docker -t localhost/main-dashboard -f Containerfile .
+podman volume create main-dashboard-data
+podman run -d --name main-dashboard \
+  -p 127.0.0.1:3000:3000 \
+  -v main-dashboard-data:/app/data \
+  localhost/main-dashboard
+```
+
+Open `http://127.0.0.1:3000/`. Check health and view logs with:
+
+```sh
+curl http://127.0.0.1:3000/health
+podman logs main-dashboard
+podman healthcheck run main-dashboard
+```
+
+The image includes the frontend and backend and uses the official Node.js
+26.12.0 image. No host Node.js installation or npm install is needed.
+The app runs as the unprivileged `node` user. It listens on `0.0.0.0:3000`
+inside the container; the published port restricts host access to localhost.
+For LAN access, replace `-p 127.0.0.1:3000:3000` with `-p 3000:3000`.
+To use another host port, use e.g. `-p 127.0.0.1:8080:3000`.
+
+SQLite lives at `/app/data/dashboard.sqlite`. The named volume holds the
+entire database directory, including SQLite journal files, outside the
+container and survives container replacement. It starts empty; existing
+host data is not copied automatically. Do not remove `main-dashboard-data`
+unless you intend to delete the saved boards and tasks.
+
+For a database imported into a named volume, ensure the application user
+owns the directory and files before starting the dashboard:
+
+```sh
+podman run --rm --user 0 -v main-dashboard-data:/app/data \
+  localhost/main-dashboard chown -R node:node /app/data
+```
+
+The running installation on this development machine uses
+`main-dashboard-data`, initialized from a consistent snapshot of the
+existing host database. Future container writes go to that volume; the
+original `data/dashboard.sqlite` remains a separate copy.
+
+Stop and start the existing container:
+
+```sh
+podman stop main-dashboard
+podman start main-dashboard
+```
+
+After code changes, rebuild and replace the container, reusing its volume:
+
+```sh
+podman build --format docker -t localhost/main-dashboard -f Containerfile .
+podman stop main-dashboard
+podman rm main-dashboard
+podman run -d --name main-dashboard \
+  -p 127.0.0.1:3000:3000 \
+  -v main-dashboard-data:/app/data \
+  localhost/main-dashboard
+```
+
+To use the existing host `data/` directory instead of a named volume on
+Linux, first stop any host instance of the app. Then use this alternative
+run command with rootless Podman (remove any previous container with the
+same name first):
+
+```sh
+mkdir -p data
+podman run -d --name main-dashboard \
+  --userns=keep-id --user "$(id -u):$(id -g)" \
+  -p 127.0.0.1:3000:3000 \
+  -v "$(pwd)/data:/app/data:Z" \
+  localhost/main-dashboard
+```
+
+This mount keeps the existing database and its journal files together.
+The `:Z` option labels the directory for private container access on SELinux
+hosts. See the [Podman volume and user namespace documentation](https://docs.podman.io/en/latest/markdown/podman-run.1.html).
+
+## Local development without a container
 
 Use Node.js 26 (see `.nvmrc`). With nvm installed:
 

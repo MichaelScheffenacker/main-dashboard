@@ -1,0 +1,8 @@
+# Only application files enter the build context; exclude data and credentials.
+**
+!Containerfile
+!package.json
+!src/
+!src/**
+!public/
+!public/**
